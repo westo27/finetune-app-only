@@ -58,14 +58,14 @@ What deliberately keeps running underneath, because per-app audio depends on it:
 ```bash
 git clone https://github.com/westo27/finetune-app-only.git
 cd finetune-app-only
-xcodebuild build -project FineTune.xcodeproj -scheme FineTune -configuration Release \
-  CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO
+./scripts/build-local.sh
 ```
 
-Or open `FineTune.xcodeproj` in Xcode and run. The Xcode target and Swift module are still named FineTune; the built bundle is `AppMixer.app`.
+That builds Release, signs ad-hoc (no Developer ID needed) and prints the install command. The Xcode target and Swift module are still named FineTune; the built bundle is `AppMixer.app`.
 
-Two things to know about local builds:
+Three things to know about local builds:
 
+- **A plain `xcodebuild` is not enough.** Hardened runtime enables library validation, which requires embedded frameworks to share the main binary's Team ID. An ad-hoc signature has no Team ID, so the bundled `Sparkle.framework` fails the check and dyld kills the process at launch with *"mapping process and mapped file have different Team IDs"*. `build-local.sh` re-signs with `com.apple.security.cs.disable-library-validation` to allow it. Developer ID builds via `scripts/build-dmg.sh` are unaffected.
 - **Signing changes the permission identity.** An ad-hoc signed build is a different app as far as macOS privacy is concerned, so **Screen & System Audio Recording** has to be granted again on first launch.
 - **There is no update feed.** `SUFeedURL` is removed, so Sparkle cannot replace this build with an upstream FineTune release. Rebuild from source to update.
 
