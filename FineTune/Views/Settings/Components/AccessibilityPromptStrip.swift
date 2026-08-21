@@ -49,7 +49,7 @@ struct AccessibilityPromptStrip: View {
                     .foregroundStyle(DesignTokens.Colors.accentPrimary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("Registers FineTune in the Accessibility list and opens System Settings.")
+                .accessibilityHint("Registers \(AppInfo.displayName) in the Accessibility list and opens System Settings.")
             }
         }
         .padding(.horizontal, DesignTokens.Spacing.md)
@@ -85,8 +85,8 @@ struct AccessibilityPromptStrip: View {
 
     private var message: String {
         showingGrantedFlourish
-            ? "Access granted — volume keys now control FineTune."
-            : "FineTune needs Accessibility to intercept F10 / F11 / F12."
+            ? "Access granted — volume keys now control \(AppInfo.displayName)."
+            : "\(AppInfo.displayName) needs Accessibility to intercept F10 / F11 / F12."
     }
 
     private func triggerGrantedFlourish() {

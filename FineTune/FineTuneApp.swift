@@ -73,7 +73,7 @@ struct FineTuneApp: App {
                 updateManager: updateManager
             )
         }
-        FluidMenuBarExtra("FineTune", image: launchIconImage, isInserted: $showMenuBarExtra) {
+        FluidMenuBarExtra(AppInfo.displayName, image: launchIconImage, isInserted: $showMenuBarExtra) {
             menuBarContent
         }
     }
@@ -107,7 +107,9 @@ struct FineTuneApp: App {
         OrphanedTapCleanup.destroyOrphanedDevices()
 
         let settings = SettingsManager()
-        let profileManager = AutoEQProfileManager()
+        // AutoEQ lives in the device UI; skip the catalog fetch when that UI is
+        // hidden. MenuBarPopupView calls loadCatalogIfNeeded() if it's switched on.
+        let profileManager = AutoEQProfileManager(loadsCatalog: settings.appSettings.showAudioDevices)
         let permission = AudioRecordingPermission()
         let engine = AudioEngine(permission: permission, settingsManager: settings, autoEQProfileManager: profileManager)
         _audioEngine = State(initialValue: engine)

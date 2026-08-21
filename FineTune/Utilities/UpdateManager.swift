@@ -22,10 +22,21 @@ final class UpdateManager: NSObject, ObservableObject {
         // Start updater to enable manual checks, but don't trigger auto-check UI
         try? updaterController.updater.start()
 
+        // This build has no appcast: SUFeedURL was removed from Info.plist so a
+        // check can't pull the upstream FineTune release over the top of it.
+        // Automatic checks are forced off to match, and the Updates tab reflects
+        // it. Restoring updates means adding a feed URL and its EdDSA key back.
+        updaterController.updater.automaticallyChecksForUpdates = false
+
         // Observe when updates can be checked
         updaterController.updater.publisher(for: \.canCheckForUpdates)
             .receive(on: DispatchQueue.main)
             .assign(to: &$canCheckForUpdates)
+    }
+
+    /// True when no appcast is configured, so update checks can't do anything.
+    var hasUpdateFeed: Bool {
+        Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil
     }
 
     /// Check for updates manually

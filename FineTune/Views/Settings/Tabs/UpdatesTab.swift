@@ -26,25 +26,34 @@ struct UpdatesTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 SettingsSection("Software Updates") {
-                    SettingsRow(
-                        "Automatic updates",
-                        description: "Check for new versions automatically"
-                    ) {
-                        Toggle("", isOn: automaticallyChecksBinding)
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                            .labelsHidden()
-                    }
-                    SettingsRowDivider()
-                    SettingsRow(
-                        "Last checked",
-                        description: lastCheckDescription
-                    ) {
-                        Button("Check Now") {
-                            updateManager.checkForUpdates()
+                    if updateManager.hasUpdateFeed {
+                        SettingsRow(
+                            "Automatic updates",
+                            description: "Check for new versions automatically"
+                        ) {
+                            Toggle("", isOn: automaticallyChecksBinding)
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
+                                .labelsHidden()
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        SettingsRowDivider()
+                        SettingsRow(
+                            "Last checked",
+                            description: lastCheckDescription
+                        ) {
+                            Button("Check Now") {
+                                updateManager.checkForUpdates()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    } else {
+                        SettingsRow(
+                            "Updates",
+                            description: "\(lastCheckDescription) · This build has no update feed, so it is never replaced automatically. Rebuild from source to update."
+                        ) {
+                            EmptyView()
+                        }
                     }
                 }
             }

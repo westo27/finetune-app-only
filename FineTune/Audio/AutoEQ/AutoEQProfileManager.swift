@@ -26,7 +26,20 @@ final class AutoEQProfileManager {
     /// Normalized names for fuzzy search (parallel array with sortedEntries).
     private var normalizedNames: [String] = []
 
-    init(loader: AutoEQProfileLoader = AutoEQProfileLoader(), fetcher: AutoEQFetcher? = nil) {
+    /// Whether the catalog load has been kicked off, so `loadCatalogIfNeeded()`
+    /// can be called freely from view lifecycles without re-fetching.
+    private var catalogLoadStarted = false
+
+    /// - Parameter loadsCatalog: Pass false to skip the GitHub catalog fetch at
+    ///   init. AutoEQ is reachable only from the device UI, so the app-only
+    ///   configuration has nothing to search and shouldn't spend a network
+    ///   request at launch on it. `loadCatalogIfNeeded()` covers the case where
+    ///   the user switches the device UI on later in the same session.
+    init(
+        loader: AutoEQProfileLoader = AutoEQProfileLoader(),
+        fetcher: AutoEQFetcher? = nil,
+        loadsCatalog: Bool = true
+    ) {
         self.loader = loader
         self.fetcher = fetcher ?? AutoEQFetcher()
 
@@ -36,7 +49,20 @@ final class AutoEQProfileManager {
             profiles[profile.id] = profile
         }
 
-        // Load catalog from cache/GitHub
+        if loadsCatalog {
+            startCatalogLoad()
+        }
+    }
+
+    /// Loads the catalog unless a load has already been started.
+    func loadCatalogIfNeeded() {
+        guard !catalogLoadStarted else { return }
+        startCatalogLoad()
+    }
+
+    /// Load catalog from cache/GitHub
+    private func startCatalogLoad() {
+        catalogLoadStarted = true
         Task { @MainActor in
             await self.fetcher.loadCatalog()
             self.rebuildSearchIndex()

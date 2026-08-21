@@ -56,6 +56,15 @@ nonisolated struct AppSettings: Codable, Equatable {
     // Popup
     var popupSize: MenuBarPopupSize = .comfortable  // Overall menu bar popup size and density
 
+    // Device Management
+    // Off by default: this build is an app-audio mixer, so the device list, device
+    // volume sliders, input tab, paired-Bluetooth list, device priority editing,
+    // per-app output routing and AutoEQ headphone correction are all suppressed.
+    // The underlying device layer stays live — process taps still render to an
+    // output device — only the management surface is hidden. Flipping this on
+    // restores every device feature, including any per-app routing still on disk.
+    var showAudioDevices: Bool = false
+
     init() {}
 
     mutating func setUnifiedLoudnessEnabled(_ enabled: Bool) {
@@ -78,6 +87,7 @@ nonisolated struct AppSettings: Codable, Equatable {
         customShortcuts = try c.decodeIfPresent([String: ShortcutCodable].self, forKey: .customShortcuts) ?? [:]
         appearance = try c.decodeIfPresent(AppearancePreference.self, forKey: .appearance) ?? .system
         popupSize = try c.decodeIfPresent(MenuBarPopupSize.self, forKey: .popupSize) ?? .comfortable
+        showAudioDevices = try c.decodeIfPresent(Bool.self, forKey: .showAudioDevices) ?? false
     }
 }
 

@@ -65,7 +65,14 @@ final class BluetoothDeviceMonitor {
         if let powerOffObserver { NotificationCenter.default.removeObserver(powerOffObserver) }
     }
 
+    /// Idempotent: the paired list is only started when the device UI is
+    /// surfaced, which can happen after launch, so start() may be called again
+    /// on an already-running monitor. Re-registering would leak observers.
     func start() {
+        guard powerOnObserver == nil else {
+            refresh()
+            return
+        }
         powerOnObserver = NotificationCenter.default.addObserver(
             forName: NSNotification.Name("IOBluetoothHostControllerPoweredOnNotification"),
             object: nil,

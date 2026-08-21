@@ -8,11 +8,15 @@ import SwiftUI
 struct IconStyleSegmentedControl: View {
     @Binding var selection: MenuBarIconStyle
 
+    /// Whether the device-derived style is offered. False in the app-only
+    /// configuration, where there is no device UI for it to correspond to.
+    var includesDeviceStyle: Bool = false
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(MenuBarIconStyle.allCases) { style in
+            ForEach(MenuBarIconStyle.selectableCases(deviceManagementEnabled: includesDeviceStyle)) { style in
                 IconOption(style: style, isSelected: selection == style) {
                     withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.15)) {
                         selection = style

@@ -82,7 +82,8 @@ final class MenuBarIconCoordinator: MediaKeyIconFlashing {
         let volume = deviceVolumeMonitor.volumes[id] ?? 0
         let muted = deviceVolumeMonitor.muteStates[id] ?? false
         return MenuBarIconState.baseline(
-            style: settings.appSettings.menuBarIconStyle,
+            style: settings.appSettings.menuBarIconStyle
+                .resolved(deviceManagementEnabled: settings.appSettings.showAudioDevices),
             volume: volume,
             muted: muted,
             deviceSymbol: currentDeviceSymbol()
@@ -133,6 +134,7 @@ final class MenuBarIconCoordinator: MediaKeyIconFlashing {
             _ = deviceVolumeMonitor.volumes[id]
             _ = deviceVolumeMonitor.muteStates[id]
             _ = settings.appSettings.menuBarIconStyle
+            _ = settings.appSettings.showAudioDevices
             _ = settings.appSettings.hudStyle
             _ = settings.devicePriorityOrder
             // Deliberate dependency so the device-style icon refreshes when the user picks a new symbol; explicit because observation granularity is per stored property.
@@ -179,7 +181,7 @@ final class MenuBarIconCoordinator: MediaKeyIconFlashing {
         if let cached = cachedButton { return cached }
         for window in NSApp.windows {
             guard let contentView = window.contentView else { continue }
-            if let button = findStatusBarButton(in: contentView, matching: "FineTune") {
+            if let button = findStatusBarButton(in: contentView, matching: AppInfo.displayName) {
                 button.wantsLayer = true
                 cachedButton = button
                 return button

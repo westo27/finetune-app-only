@@ -266,7 +266,11 @@ final class AudioEngine {
                     self.processMonitor.start()
                 }
                 self.deviceMonitor.start()
-                self.bluetoothDeviceMonitor.start()
+                // The paired-device list only exists inside the device section of
+                // the popup; don't touch IOBluetooth at all when it's hidden.
+                if self.deviceRoutingEnabled {
+                    self.bluetoothDeviceMonitor.start()
+                }
 
                 #if !APP_STORE
                 ddc.onProbeCompleted = { [weak self] in
@@ -521,8 +525,11 @@ final class AudioEngine {
         appListCoordinator.setEQSettingsForInactive(settings, identifier: identifier)
     }
 
+    /// Persisted routing for a pinned-inactive app. Reported as nil (follow
+    /// system default) while routing is gated off, matching the active-app path.
     func getDeviceRoutingForInactive(identifier: String) -> String? {
-        appListCoordinator.getDeviceRoutingForInactive(identifier: identifier)
+        guard deviceRoutingEnabled else { return nil }
+        return appListCoordinator.getDeviceRoutingForInactive(identifier: identifier)
     }
 
     func setDeviceRoutingForInactive(identifier: String, deviceUID: String?) {
@@ -530,11 +537,13 @@ final class AudioEngine {
     }
 
     func isFollowingDefaultForInactive(identifier: String) -> Bool {
-        appListCoordinator.isFollowingDefaultForInactive(identifier: identifier)
+        guard deviceRoutingEnabled else { return true }
+        return appListCoordinator.isFollowingDefaultForInactive(identifier: identifier)
     }
 
     func getDeviceSelectionModeForInactive(identifier: String) -> DeviceSelectionMode {
-        appListCoordinator.getDeviceSelectionModeForInactive(identifier: identifier)
+        guard deviceRoutingEnabled else { return .single }
+        return appListCoordinator.getDeviceSelectionModeForInactive(identifier: identifier)
     }
 
     func setDeviceSelectionModeForInactive(identifier: String, to mode: DeviceSelectionMode) {
@@ -542,7 +551,8 @@ final class AudioEngine {
     }
 
     func getSelectedDeviceUIDsForInactive(identifier: String) -> Set<String> {
-        appListCoordinator.getSelectedDeviceUIDsForInactive(identifier: identifier)
+        guard deviceRoutingEnabled else { return [] }
+        return appListCoordinator.getSelectedDeviceUIDsForInactive(identifier: identifier)
     }
 
     func setSelectedDeviceUIDsForInactive(identifier: String, to uids: Set<String>) {
@@ -759,7 +769,7 @@ final class AudioEngine {
     // MARK: - Per-Device AutoEQ
 
     func getAutoEQProfile(for deviceUID: String) -> AutoEQProfile? {
-        guard let selection = settingsManager.getAutoEQSelection(for: deviceUID) else { return nil }
+        guard let selection = getAutoEQSelection(for: deviceUID) else { return nil }
         return autoEQProfileManager.profile(for: selection.profileID)
     }
 
@@ -779,8 +789,16 @@ final class AudioEngine {
         applyAutoEQToTaps(for: deviceUID)
     }
 
+    /// The AutoEQ selection in force for a device, or nil.
+    ///
+    /// AutoEQ is per-device headphone correction whose only entry point is the
+    /// device row, so it is gated with the rest of device management: with
+    /// `showAudioDevices` off this returns nil even when a selection is
+    /// persisted, which keeps correction out of the processing chain rather than
+    /// merely out of sight. Selections stay on disk and come back with the flag.
     func getAutoEQSelection(for deviceUID: String) -> AutoEQSelection? {
-        settingsManager.getAutoEQSelection(for: deviceUID)
+        guard deviceRoutingEnabled else { return nil }
+        return settingsManager.getAutoEQSelection(for: deviceUID)
     }
 
     var autoEQPreampEnabled: Bool {
@@ -819,7 +837,7 @@ final class AudioEngine {
     /// Synchronous in-memory AutoEQ profile lookup. nil = not yet cached.
     private func autoEQProfileForActivation(deviceUID: String) -> AutoEQProfile? {
         guard let device = deviceMonitor.device(for: deviceUID), device.supportsAutoEQ else { return nil }
-        guard let selection = settingsManager.getAutoEQSelection(for: deviceUID), selection.isEnabled else { return nil }
+        guard let selection = getAutoEQSelection(for: deviceUID), selection.isEnabled else { return nil }
         return autoEQProfileManager.profile(for: selection.profileID)
     }
 
@@ -852,7 +870,7 @@ final class AudioEngine {
             return
         }
 
-        guard let selection = settingsManager.getAutoEQSelection(for: deviceUID),
+        guard let selection = getAutoEQSelection(for: deviceUID),
               selection.isEnabled else {
             tap.updateAutoEQProfile(nil)
             logger.debug("AutoEQ skip for \(tap.app.name): no selection or disabled for \(device.name)")
@@ -871,7 +889,7 @@ final class AudioEngine {
             guard let profile = await autoEQProfileManager.resolveProfile(for: selection.profileID) else { return }
             // Verify tap still exists and is still routed to the same device
             guard tap.currentDeviceUID == deviceUID else { return }
-            guard let latestSelection = settingsManager.getAutoEQSelection(for: deviceUID),
+            guard let latestSelection = getAutoEQSelection(for: deviceUID),
                   latestSelection.profileID == selection.profileID,
                   latestSelection.isEnabled else { return }
             tap.updateAutoEQProfile(profile)
@@ -961,14 +979,36 @@ final class AudioEngine {
 
     /// Returns true if the app follows system default device
     func isFollowingDefault(for app: AudioApp) -> Bool {
-        followsDefault.contains(app.id)
+        guard deviceRoutingEnabled else { return true }
+        return followsDefault.contains(app.id)
+    }
+
+    // MARK: - Device Routing Gate
+
+    /// Whether per-app output routing is honoured at all.
+    ///
+    /// False in the default app-only configuration. Every app then behaves as
+    /// follow-system-default and single-device, no matter what is persisted, so
+    /// a routing or multi-device selection saved while the device UI was visible
+    /// cannot keep applying from a screen the user can no longer see. The
+    /// persisted values are deliberately left untouched on disk: re-enabling
+    /// `showAudioDevices` restores them exactly as they were.
+    var deviceRoutingEnabled: Bool {
+        settingsManager.appSettings.showAudioDevices
+    }
+
+    /// Persisted follow-default state, forced true while routing is gated off.
+    private func effectiveFollowsDefault(for identifier: String) -> Bool {
+        guard deviceRoutingEnabled else { return true }
+        return settingsManager.isFollowingDefault(for: identifier)
     }
 
     // MARK: - Multi-Device Selection
 
     /// Gets the device selection mode for an app
     func getDeviceSelectionMode(for app: AudioApp) -> DeviceSelectionMode {
-        volumeState.getDeviceSelectionMode(for: app.id)
+        guard deviceRoutingEnabled else { return .single }
+        return volumeState.getDeviceSelectionMode(for: app.id)
     }
 
     /// Sets the device selection mode for an app.
@@ -1087,7 +1127,7 @@ final class AudioEngine {
         // already loaded by AutoEQProfileManager.init.
         let selectedProfileIDs: Set<String> = Set(apps.compactMap { app -> String? in
             let deviceUID = appDeviceRouting[app.id] ?? deviceVolumeMonitor.defaultDeviceUID
-            guard let deviceUID, let selection = settingsManager.getAutoEQSelection(for: deviceUID) else { return nil }
+            guard let deviceUID, let selection = getAutoEQSelection(for: deviceUID) else { return nil }
             return selection.isEnabled ? selection.profileID : nil
         })
         let manager = autoEQProfileManager
@@ -1101,9 +1141,11 @@ final class AudioEngine {
             guard !appliedPIDs.contains(app.id) else { continue }
             guard !settingsManager.isIgnored(app.persistenceIdentifier) else { continue }
 
-            // Load saved device selection mode (single vs multi)
+            // Load saved device selection mode (single vs multi). Forced single
+            // while routing is gated off so a persisted multi-device fan-out
+            // doesn't survive into the app-only configuration.
             let savedMode = volumeState.loadSavedDeviceSelectionMode(for: app.id, identifier: app.persistenceIdentifier)
-            let mode = savedMode ?? .single
+            let mode = deviceRoutingEnabled ? (savedMode ?? .single) : .single
 
             // Load saved volume, mute, and boost state
             let savedVolume = volumeState.loadSavedVolume(for: app.id, identifier: app.persistenceIdentifier)
@@ -1145,7 +1187,7 @@ final class AudioEngine {
 
             // Single-device mode (or multi-mode fallback)
             let deviceUID: String
-            if settingsManager.isFollowingDefault(for: app.persistenceIdentifier) {
+            if effectiveFollowsDefault(for: app.persistenceIdentifier) {
                 // App follows system default (new app or explicitly set to follow)
                 followsDefault.insert(app.id)
                 guard let defaultUID = deviceVolumeMonitor.defaultDeviceUID else {
@@ -1454,7 +1496,9 @@ final class AudioEngine {
 
             // Skip apps that are PERSISTED as following default - they don't have explicit device preferences
             // Note: in-memory followsDefault may include temporarily displaced apps, so check persisted state
-            guard !settingsManager.isFollowingDefault(for: app.persistenceIdentifier) else { continue }
+            // `effectiveFollowsDefault` is true for every app while routing is
+            // gated off, so no app is pulled back onto a reconnecting device.
+            guard !effectiveFollowsDefault(for: app.persistenceIdentifier) else { continue }
 
             // Check if this app was pinned to the reconnected device (from persisted settings)
             let persistedUID = settingsManager.getDeviceRouting(for: app.persistenceIdentifier)
@@ -1489,7 +1533,8 @@ final class AudioEngine {
         var multiModeTapsToUpdate: [any ProcessTapControlling] = []
         for tap in taps.values {
             let app = tap.app
-            guard settingsManager.getDeviceSelectionMode(for: app.persistenceIdentifier) == .multi else { continue }
+            guard deviceRoutingEnabled,
+                  settingsManager.getDeviceSelectionMode(for: app.persistenceIdentifier) == .multi else { continue }
             guard let persistedUIDs = settingsManager.getSelectedDeviceUIDs(for: app.persistenceIdentifier),
                   persistedUIDs.contains(deviceUID) else { continue }
             let currentUIDs = volumeState.getSelectedDeviceUIDs(for: app.id)

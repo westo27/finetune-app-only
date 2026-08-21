@@ -26,7 +26,9 @@ struct AudioTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 volumeSection
-                devicesSection
+                if settings.appSettings.showAudioDevices {
+                    devicesSection
+                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 20)

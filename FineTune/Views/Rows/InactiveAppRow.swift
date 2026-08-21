@@ -40,6 +40,9 @@ struct InactiveAppRow: View {
 
     @State private var localEQSettings: EQSettings
 
+    /// Suppresses the routing subtitle in the default app-only configuration.
+    @Environment(\.deviceManagementEnabled) private var deviceManagementEnabled
+
     init(
         appInfo: PinnedAppInfo,
         icon: NSImage,
@@ -125,7 +128,8 @@ struct InactiveAppRow: View {
                         .help(appInfo.displayName)
                         .foregroundStyle(DesignTokens.Colors.textPrimary)
 
-                    if let subtitle = DevicePicker.routingSubtitle(
+                    if deviceManagementEnabled,
+                       let subtitle = DevicePicker.routingSubtitle(
                         devices: devices,
                         selectedDeviceUID: selectedDeviceUID ?? defaultDeviceUID ?? "",
                         selectedDeviceUIDs: selectedDeviceUIDs,

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# FineTune DMG Build Script
+# AppMixer DMG Build Script
 # Requires: Xcode, Node.js 18+, GraphicsMagick, ImageMagick
 # Install dependencies: brew install graphicsmagick imagemagick
 
@@ -17,12 +17,12 @@ echo "==> Building release archive..."
 xcodebuild -project "$PROJECT_DIR/FineTune.xcodeproj" \
     -scheme FineTune \
     -configuration Release \
-    -archivePath "$BUILD_DIR/FineTune.xcarchive" \
+    -archivePath "$BUILD_DIR/AppMixer.xcarchive" \
     archive
 
 echo "==> Exporting notarized app..."
 xcodebuild -exportArchive \
-    -archivePath "$BUILD_DIR/FineTune.xcarchive" \
+    -archivePath "$BUILD_DIR/AppMixer.xcarchive" \
     -exportPath "$BUILD_DIR" \
     -exportOptionsPlist "$PROJECT_DIR/ExportOptions.plist"
 
@@ -31,7 +31,7 @@ echo "==> Creating DMG..."
 # - App icon composited onto disk icon
 # - "Drag to Applications" layout
 # - Code signing
-npx create-dmg "$BUILD_DIR/FineTune.app" "$BUILD_DIR" --overwrite
+npx create-dmg "$BUILD_DIR/AppMixer.app" "$BUILD_DIR" --overwrite
 
 echo "==> Done!"
 echo "DMG created at: $BUILD_DIR/"

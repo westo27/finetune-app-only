@@ -1,130 +1,91 @@
-<img src="assets/icon.png" width="170" height="170" alt="FineTune app icon" align="left"/>
+<img src="assets/icon.png" width="170" height="170" alt="AppMixer app icon" align="left"/>
 
-<h3>FineTune</h3>
+<h3>AppMixer</h3>
 
-Control the volume of every app independently, boost quiet ones up to 4x, route audio to different speakers, and shape your sound with EQ and headphone correction. Lives in your menu bar. Free and open-source.
-
-<a href="https://github.com/ronitsingh10/FineTune/releases/latest/download/FineTune.dmg"><img src="assets/download-badge.svg" alt="Download for macOS" height="48"/></a>
+Per-app audio control for macOS. Give every application its own volume, mute, up-to-4x boost and 10-band EQ from the menu bar. Audio devices are macOS's business: AppMixer leaves them alone.
 
 <br clear="all"/>
 
 <p align="center">
-  <a href="https://github.com/ronitsingh10/FineTune/releases/latest"><img src="https://img.shields.io/github/v/release/ronitsingh10/FineTune?style=for-the-badge&labelColor=1c1c1e&color=0A84FF&logo=github&logoColor=white" alt="Latest Release"></a>
-  <a href="https://github.com/ronitsingh10/FineTune/releases"><img src="https://img.shields.io/github/downloads/ronitsingh10/FineTune/total?style=for-the-badge&labelColor=1c1c1e&color=3a3a3c" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-3a3a3c?style=for-the-badge&labelColor=1c1c1e" alt="License: GPL v3"></a>
-  <a href="https://ko-fi.com/ronitsingh10"><img src="https://img.shields.io/badge/Tip_on_Ko--fi-FF5E5B?style=for-the-badge&labelColor=1c1c1e&logo=ko-fi&logoColor=white" alt="Tip on
-  Ko-fi"></a>
   <a href="https://www.apple.com/macos/"><img src="https://img.shields.io/badge/macOS-15%2B-3a3a3c?style=for-the-badge&labelColor=1c1c1e&logo=apple&logoColor=white" alt="macOS 15+"></a>
 </p>
 
-<p align="center">
-  <strong>English</strong> · <a href="README.zh-CN.md">简体中文</a>
-</p>
-
-<p align="center">
-  <img src="assets/screenshot-main.png" alt="FineTune popup showing per-app volume control, multi-device output routing with picker popover, AutoEQ headphone correction, and device-level volume sliders" width="700">
-</p>
-<p align="center">
-  <img src="assets/screenshot-eq.png" alt="FineTune showing the Brave Browser app row expanded with the EQ panel open and a Vocal Clarity preset selected" width="700">
-</p>
-
-## Install
-
-**Homebrew** (recommended)
-
-```bash
-brew install --cask finetune
-```
-
-**Manual** — [Download latest release](https://github.com/ronitsingh10/FineTune/releases/latest)
+AppMixer is a fork of [FineTune](https://github.com/ronitsingh10/FineTune) by Ronit Singh, narrowed to app-audio mixing. The audio engine is unchanged — every app is still captured by its own Core Audio process tap and re-rendered — but the device-management surface is switched off, so the popup lists apps and nothing else.
 
 ## Quick Start
 
-1. Install FineTune and launch it from your Applications folder
+1. Build from source (below) and move `AppMixer.app` into `/Applications`
 2. Grant **Screen & System Audio Recording** permission when prompted
-3. Click the FineTune icon in your menu bar. Apps playing audio appear automatically.
-
-That's it. Adjust sliders, route audio, and explore EQ from the menu bar.
-
-> **Tip:** Want FineTune to auto-switch to a specific device when you connect it? Open edit mode (pencil icon) and drag it above the built-in speakers. This is a one-time setup. Your preferred order is saved permanently.
+3. Click the menu bar icon. Apps playing audio appear automatically.
 
 ## Features
 
-### 🎚 Volume Control
-- **Per-app volume** — Individual sliders and mute for each application
-- **Per-app volume boost** — 2x / 3x / 4x gain presets
-- **Pinned apps** — Keep apps visible in the menu bar even when they're not playing, so you can configure volume, EQ, and routing in advance
-- **Ignore apps** — Completely disengage FineTune from specific apps. Tears down the audio tap so the app returns to normal macOS audio
-- **Scroll-wheel volume** — Hover any slider in the popup, the HUD, or the EQ panel and scroll to adjust.
+### 🎚 Volume
+- **Per-app volume** — Individual slider and mute for each application
+- **Per-app boost** — 2x / 3x / 4x gain presets for apps that are too quiet
+- **Pinned apps** — Keep an app listed when it isn't playing, so its volume and EQ can be set in advance
+- **Ignored apps** — Disengage from an app entirely. The tap is torn down and the app returns to normal macOS audio
+- **Scroll-wheel volume** — Hover any slider in the popup, the HUD or the EQ panel and scroll
 
 ### ⌨️ Keyboard
-- **Global volume hotkeys** — Bind your own keys to **App Volume Up**, **App Volume Down**, and **App Mute** from Settings → Shortcuts. The "app" is whichever is currently making sound, so volume-down while a YouTube tab plays behind a foreground Terminal turns down YouTube, not the terminal. If nothing is audible, the hotkey falls through to the frontmost app.
-- **Toggle the popup from anywhere** — Bind a hotkey to **Toggle FineTune Popup** and the menu bar opens or closes on demand, including from full-screen apps.
-- **Configurable step size** — Pick **Coarse / Normal / Fine / Extra-Fine** under Settings → Shortcuts → Volume Step. The same setting governs the F10–F12 media keys, the global hotkeys, and the popup's arrow-key navigation.
-- **Hold to ramp, auto-unmute on volume-up** — Holding App Volume Up or Down emits repeats the way macOS does for arrow keys. Volume-up while muted unmutes and sets the new level in one keystroke.
-- **Drive the popup with the keyboard** — Once the popup is open, **↑ / ↓** move between rows, **← / →** adjusts the focused row's volume (Shift = 2× step), **M** toggles mute, **Return / Space** activates, **Tab** switches between Output and Input device tabs, **Esc** closes. The focused row autoscrolls to center as you arrow through.
+- **Global volume hotkeys** — Bind **App Volume Up / Down / Mute** in Settings → Shortcuts. The target is whichever app is currently making sound, falling back to the frontmost app when nothing is audible
+- **Toggle the popup from anywhere** — Including from full-screen apps
+- **Configurable step size** — Coarse / Normal / Fine / Extra-Fine, shared by the media keys, the hotkeys and arrow-key navigation
+- **Drive the popup from the keyboard** — ↑ / ↓ move between apps, ← / → adjust volume (Shift = 2× step), **M** mutes, **Return** expands the EQ panel, **Esc** closes
+- **Media keys & volume HUD** — Opt-in F10–F12 control with a Tahoe-style or Classic-style on-screen HUD
 
-### 🔀 Audio Routing
-- **Multi-device output** — Route audio to multiple devices simultaneously
-- **Audio routing** — Send apps to different outputs or follow system default
-- **Device priority** — Choose which device FineTune switches to when a new device connects; auto-fallback on disconnect
-- **Auto-restore** — When a device reconnects, apps automatically return to it with their volume, routing, and EQ intact
-
-### 🎛 EQ & Correction
-- **10-band EQ** — 20 presets across 5 categories
-- **User EQ presets** — Save, rename, and manage custom EQ configurations per app
-- **AutoEQ headphone correction** — Search thousands of headphone profiles or import your own ParametricEQ.txt files for per-device frequency response correction
-- **Loudness compensation** — Automatic bass and treble correction at low volumes using ISO 226:2023 equal-loudness contours, with real-time level management to keep perceived loudness consistent
-
-### 🖥 Devices & System
-- **Input device control** — Monitor and adjust microphone levels
-- **Alert volume** — Control macOS notification and alert volume from settings
-- **Smart volume backend** — FineTune auto-picks hardware, DDC, or software volume per device. If the hardware slider on a USB DAC or HDMI output doesn't actually control level, force software volume from the device inspector and FineTune remembers the choice for that device
-- **Device inspector** — Tap the info button on any device row for sample rate (with picker), transport, UID copy, hog-mode banner, and the software-volume override
-- **Hide devices** — Eye toggle in edit mode hides output and input devices you don't want in the list, mirroring the app-hide flow
-- **Bluetooth device management** — Connect paired devices directly from the menu bar
-- **Monitor speaker control** — Adjust volume on external displays via DDC
-- **Media keys & Volume HUD** — Opt-in F10–F12 control for the default output device, with a Tahoe-style or Classic-style on-screen HUD. The write goes through FineTune's volume pipeline, so keys keep working on USB interfaces and HDMI outputs where macOS's own keys are greyed out because the hardware slider is broken.
-- **Dynamic menu bar icon** — Pick from four styles in Settings (Default, Speaker, Waveform, Equalizer). The **Speaker** style tracks volume live (zero / low / mid / high glyphs) and switches to a slashed speaker when muted. All styles briefly flash the new output's SF Symbol on device switch. Changing style applies instantly, no relaunch required.
-- **Menu bar app** — Lightweight, always accessible
-- **URL schemes** — Automate volume, mute, device routing, and more from scripts
+### 🎛 EQ
+- **10-band EQ per app** — 20 presets across 5 categories
+- **User presets** — Save, rename and manage your own EQ curves
+- **Loudness compensation** — Bass and treble correction at low volume using ISO 226:2023 equal-loudness contours
 
 ### 🎨 Appearance
-- **Light or Dark theme** — Settings → General → Theme matches macOS or locks FineTune to Light or Dark. The menu bar popup, every popover, and the volume HUD switch immediately.
-- **Popup density** — Settings → General → Popup Size picks **Compact / Comfortable / Spacious** with a live tile preview. Compact fits more apps on small screens; Spacious gives bigger hit areas for trackpads.
+- **Light or Dark theme** — Follows macOS, or locks to one
+- **Popup density** — Compact / Comfortable / Spacious
+- **Menu bar icon** — Default, Speaker (tracks volume live), Waveform or Equalizer
+
+## Device management
+
+Everything device-shaped sits behind one switch: **Settings → General → Show Audio Devices**, off by default. Off, there is no device list, no device volume or mute, no input/microphone tab, no per-app output routing, no paired-Bluetooth list, no device priority ordering and no AutoEQ headphone correction. Every app follows the system default output.
+
+Switching it on restores all of it, including any per-app routing and AutoEQ selections still saved on disk — the gate hides those features, it never deletes what you configured.
+
+What deliberately keeps running underneath, because per-app audio depends on it: device discovery, aggregate-device construction for the taps, and reconnection handling. The media keys still adjust the system output volume, as they would without this app installed.
+
+## Build from Source
+
+```bash
+git clone https://github.com/westo27/finetune-app-only.git
+cd finetune-app-only
+xcodebuild build -project FineTune.xcodeproj -scheme FineTune -configuration Release \
+  CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO
+```
+
+Or open `FineTune.xcodeproj` in Xcode and run. The Xcode target and Swift module are still named FineTune; the built bundle is `AppMixer.app`.
+
+Two things to know about local builds:
+
+- **Signing changes the permission identity.** An ad-hoc signed build is a different app as far as macOS privacy is concerned, so **Screen & System Audio Recording** has to be granted again on first launch.
+- **There is no update feed.** `SUFeedURL` is removed, so Sparkle cannot replace this build with an upstream FineTune release. Rebuild from source to update.
+
+The bundle identifier is unchanged (`com.finetuneapp.FineTune`), so settings written by an existing FineTune install carry over.
 
 ## Documentation
 
-- **[AutoEQ & Headphone Correction](guide/autoeq.md)** — Apply frequency correction from the [AutoEQ](https://github.com/jaakkopasanen/AutoEq) project, import [EqualizerAPO](https://sourceforge.net/projects/equalizerapo/) profiles, or browse [autoeq.app](https://www.autoeq.app/)
-- **[URL Schemes](guide/url-schemes.md)** — Automate FineTune from Terminal, [Shortcuts](https://support.apple.com/guide/shortcuts-mac), [Raycast](https://raycast.com), or scripts
+- **[URL Schemes](guide/url-schemes.md)** — Automate volume and mute from Terminal, Shortcuts, Raycast or scripts
 - **[Troubleshooting](guide/troubleshooting.md)** — Permission issues, missing apps, audio problems
-
-## Contributing
-
-- **Star this repo** — Help others discover FineTune
-- **Report bugs** — [Open an issue](https://github.com/ronitsingh10/FineTune/issues)
-- **Contribute code** — See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-### Build from Source
-
-```bash
-git clone https://github.com/ronitsingh10/FineTune.git
-cd FineTune
-open FineTune.xcodeproj
-```
+- **[AutoEQ & Headphone Correction](guide/autoeq.md)** — Applies only with Show Audio Devices switched on
 
 ## Requirements
 
 - macOS 15.0 (Sequoia) or later
 - Audio capture permission (prompted on first launch)
 
-## Support
+## Credits
 
-FineTune is free and open source, forever. If it made your day a little easier, you can buy me a coffee — but genuinely not expected 🙏
-
-[![Buy me a coffee](https://img.shields.io/badge/Buy_me_a_coffee-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/ronitsingh10)
-
+Upstream [FineTune](https://github.com/ronitsingh10/FineTune) is the work of [Ronit Singh](https://github.com/ronitsingh10), who deserves the credit for the audio engine this fork inherits. If it is useful to you, [tip the original author](https://ko-fi.com/ronitsingh10).
 
 ## License
 
-[GPL v3](LICENSE)
+[GPL v3](LICENSE), as upstream.

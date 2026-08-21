@@ -28,6 +28,21 @@ enum MenuBarIconStyle: String, Codable, CaseIterable, Identifiable {
     var isSystemSymbol: Bool {
         self != .default
     }
+
+    /// The styles a user may pick, given whether device management is surfaced.
+    ///
+    /// `.device` renders the current output device's own symbol, so it is a
+    /// device-management affordance and is withdrawn along with the rest of them.
+    static func selectableCases(deviceManagementEnabled: Bool) -> [MenuBarIconStyle] {
+        deviceManagementEnabled ? allCases : allCases.filter { $0 != .device }
+    }
+
+    /// This style, or the nearest substitute when it is no longer selectable.
+    /// Keeps a persisted `.device` choice from rendering a device icon after the
+    /// device UI is switched off, without rewriting what the user picked.
+    func resolved(deviceManagementEnabled: Bool) -> MenuBarIconStyle {
+        (self == .device && !deviceManagementEnabled) ? .speaker : self
+    }
 }
 
 // MARK: - HUD Style

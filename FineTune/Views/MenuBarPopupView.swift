@@ -105,16 +105,28 @@ struct MenuBarPopupView: View {
         audioEngine.settingsManager.appSettings.popupSize.dimensions
     }
 
+    /// Whether device management is surfaced at all. Off in the default app-only
+    /// configuration, which suppresses the device list, the Output/Input tabs,
+    /// device priority editing, per-app routing and AutoEQ. The device layer
+    /// underneath keeps running — taps still render to an output device.
+    private var devicesEnabled: Bool {
+        audioEngine.settingsManager.appSettings.showAudioDevices
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
             HStack(alignment: .top) {
-                deviceTabsHeader
+                if devicesEnabled {
+                    deviceTabsHeader
+                }
                 Spacer()
                 if isEditingDevicePriority {
-                    Text("Drag or type a number to set priority")
+                    Text(devicesEnabled
+                         ? "Drag or type a number to set priority"
+                         : "Hide apps, or pin them to keep them listed")
                         .font(.system(size: 11))
                         .foregroundStyle(DesignTokens.Colors.textSecondary)
-                } else {
+                } else if devicesEnabled {
                     defaultDevicesStatus
                 }
                 Spacer()
@@ -146,7 +158,12 @@ struct MenuBarPopupView: View {
         .darkGlassBackground()
         .preferredColorScheme(audioEngine.settingsManager.appSettings.appearance.swiftUIColorScheme)
         .environment(\.appearancePreference, audioEngine.settingsManager.appSettings.appearance)
+        .environment(\.deviceManagementEnabled, devicesEnabled)
         .onAppear {
+            guard devicesEnabled else { return }
+            // No-op unless the device UI was switched on after launch, when the
+            // catalog fetch was skipped.
+            audioEngine.autoEQProfileManager.loadCatalogIfNeeded()
             updateSortedDevices()
             updateSortedInputDevices()
             pairedDevices = audioEngine.bluetoothDeviceMonitor.pairedDevices
@@ -155,6 +172,25 @@ struct MenuBarPopupView: View {
             // notifications below, not by .onAppear — SwiftUI mounts this view
             // before the popup is actually shown, and setting isVisible here
             // would suppress the HUD on the first media key at cold launch.
+        }
+        .onChange(of: devicesEnabled) { _, enabled in
+            // The popup view stays mounted across Settings changes, so .onAppear
+            // won't re-run when the user flips device management on. Hydrate the
+            // device state here instead, and tear the device-only UI state back
+            // down when it's switched off.
+            guard enabled else {
+                exitEditModeSaving()
+                showingInputDevices = false
+                syncNavOrder()
+                return
+            }
+            audioEngine.autoEQProfileManager.loadCatalogIfNeeded()
+            updateSortedDevices()
+            updateSortedInputDevices()
+            pairedDevices = audioEngine.bluetoothDeviceMonitor.pairedDevices
+            isBluetoothOn = audioEngine.bluetoothDeviceMonitor.isBluetoothOn
+            audioEngine.bluetoothDeviceMonitor.start()
+            syncNavOrder()
         }
         .onChange(of: audioEngine.outputDevices) { _, _ in
             if isEditingDevicePriority && !wasEditingInputDevices {
@@ -206,7 +242,9 @@ struct MenuBarPopupView: View {
             else { return }
             isPopupVisible = true
             popupVisibility.isVisible = true
-            audioEngine.bluetoothDeviceMonitor.refresh()
+            if devicesEnabled {
+                audioEngine.bluetoothDeviceMonitor.refresh()
+            }
             syncNavOrder()
             hasKeyboardEngaged = false
             selectedRow = nil
@@ -257,7 +295,9 @@ struct MenuBarPopupView: View {
 
     /// Edit priority button — pencil ↔ checkmark, styled to match settingsButton
     private var editPriorityButton: some View {
-        Button(isEditingDevicePriority ? "Done reordering" : "Reorder devices",
+        let idleLabel = devicesEnabled ? "Reorder devices" : "Edit apps"
+        let label = isEditingDevicePriority ? "Done editing" : idleLabel
+        return Button(label,
                systemImage: isEditingDevicePriority ? "checkmark" : "pencil") {
             toggleDevicePriorityEdit()
         }
@@ -272,7 +312,7 @@ struct MenuBarPopupView: View {
         )
         .contentShape(Rectangle())
         .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isEditingDevicePriority)
-        .help(isEditingDevicePriority ? "Done reordering" : "Reorder devices")
+        .help(label)
     }
 
     // MARK: - Settings Button
@@ -333,11 +373,14 @@ struct MenuBarPopupView: View {
     @ViewBuilder
     private func mainContent(scrollProxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            // Devices section (tabbed: Output / Input)
-            devicesSection
+            // Devices section (tabbed: Output / Input) — suppressed in the
+            // app-only configuration, which is the default.
+            if devicesEnabled {
+                devicesSection
 
-            Divider()
-                .padding(.vertical, DesignTokens.Spacing.xs)
+                Divider()
+                    .padding(.vertical, DesignTokens.Spacing.xs)
+            }
 
             // Apps section (active + pinned inactive + hidden in edit mode)
             appsSection(scrollProxy: scrollProxy)
@@ -360,8 +403,8 @@ struct MenuBarPopupView: View {
                         isSupportHovered = hovering
                     }
                 }
-                .accessibilityLabel("Donate to FineTune")
-                .help("Donate to FineTune")
+                .accessibilityLabel("Donate to \(AppInfo.displayName)")
+                .help("Donate to \(AppInfo.displayName)")
 
                 Spacer()
 
@@ -378,8 +421,8 @@ struct MenuBarPopupView: View {
                 .font(DesignTokens.Typography.caption)
                 .foregroundStyle(DesignTokens.Colors.textSecondary)
                 .glassButtonStyle()
-                .accessibilityLabel("Quit FineTune")
-                .help("Quit FineTune (⌘Q)")
+                .accessibilityLabel("Quit \(AppInfo.displayName)")
+                .help("Quit \(AppInfo.displayName) (⌘Q)")
             }
         }
     }
@@ -1037,15 +1080,18 @@ struct MenuBarPopupView: View {
         } else {
             // Entering edit mode: use the full (unfiltered) device list so hidden devices are also shown.
             wasEditingInputDevices = showingInputDevices
-            editableDeviceOrder = showingInputDevices
-                ? audioEngine.prioritySortedInputDevices
-                : audioEngine.prioritySortedOutputDevices
+            editableDeviceOrder = devicesEnabled
+                ? (showingInputDevices
+                    ? audioEngine.prioritySortedInputDevices
+                    : audioEngine.prioritySortedOutputDevices)
+                : []
             isEditingDevicePriority = true
         }
     }
 
     /// Persists the editable order to the correct priority list, preserving disconnected device positions.
     private func persistEditableOrder() {
+        guard devicesEnabled else { return }
         let connectedOrder = editableDeviceOrder.map(\.uid)
         if wasEditingInputDevices {
             audioEngine.settingsManager.mergeInputDevicePriorityOrder(
@@ -1193,7 +1239,9 @@ struct MenuBarPopupView: View {
     // MARK: - Keyboard Navigation
 
     private func syncNavOrder() {
-        let activeDevices = showingInputDevices ? sortedInputDevices : sortedDevices
+        let activeDevices = devicesEnabled
+            ? (showingInputDevices ? sortedInputDevices : sortedDevices)
+            : []
         navModel.syncOrder(
             activeDevices: activeDevices,
             appPersistenceIDs: audioEngine.displayableApps.map(\.id),
@@ -1202,7 +1250,8 @@ struct MenuBarPopupView: View {
     }
 
     private func currentDefaultDeviceUID() -> String? {
-        showingInputDevices
+        guard devicesEnabled else { return nil }
+        return showingInputDevices
             ? deviceVolumeMonitor.defaultInputDeviceUID
             : deviceVolumeMonitor.defaultDeviceUID
     }

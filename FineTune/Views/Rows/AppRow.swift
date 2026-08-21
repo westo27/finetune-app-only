@@ -38,6 +38,9 @@ struct AppRow: View {
     @State private var isIconHovered = false
     @State private var localEQSettings: EQSettings
 
+    /// Suppresses the routing subtitle in the default app-only configuration.
+    @Environment(\.deviceManagementEnabled) private var deviceManagementEnabled
+
     init(
         app: AudioApp,
         volume: Float,
@@ -139,7 +142,8 @@ struct AppRow: View {
                         .lineLimit(1)
                         .help(app.name)
 
-                    if let subtitle = DevicePicker.routingSubtitle(
+                    if deviceManagementEnabled,
+                       let subtitle = DevicePicker.routingSubtitle(
                         devices: devices,
                         selectedDeviceUID: selectedDeviceUID,
                         selectedDeviceUIDs: selectedDeviceUIDs,

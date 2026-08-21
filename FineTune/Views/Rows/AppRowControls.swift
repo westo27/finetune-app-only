@@ -28,6 +28,10 @@ struct AppRowControls: View {
     @State private var dragOverrideValue: Double?
     @State private var isEQButtonHovered = false
 
+    /// Hides the output picker in the default app-only configuration, where every
+    /// app follows the system default device.
+    @Environment(\.deviceManagementEnabled) private var deviceManagementEnabled
+
     private var sliderValue: Double {
         dragOverrideValue ?? VolumeMapping.gainToSlider(volume)
     }
@@ -112,22 +116,24 @@ struct AppRowControls: View {
             // Boost chevrons
             BoostChevrons(level: boost, onTap: { onBoostChange(boost.next) })
 
-            DevicePicker(
-                devices: devices,
-                deviceIconOverrides: deviceIconOverrides,
-                selectedDeviceUID: selectedDeviceUID,
-                selectedDeviceUIDs: selectedDeviceUIDs,
-                isFollowingDefault: isFollowingDefault,
-                defaultDeviceUID: defaultDeviceUID,
-                mode: deviceSelectionMode,
-                onModeChange: onDeviceModeChange,
-                onDeviceSelected: onDeviceSelected,
-                onDevicesSelected: onDevicesSelected,
-                onSelectFollowDefault: onSelectFollowDefault,
-                showModeToggle: true,
-                triggerWidth: 0,
-                triggerStyle: .iconOnly
-            )
+            if deviceManagementEnabled {
+                DevicePicker(
+                    devices: devices,
+                    deviceIconOverrides: deviceIconOverrides,
+                    selectedDeviceUID: selectedDeviceUID,
+                    selectedDeviceUIDs: selectedDeviceUIDs,
+                    isFollowingDefault: isFollowingDefault,
+                    defaultDeviceUID: defaultDeviceUID,
+                    mode: deviceSelectionMode,
+                    onModeChange: onDeviceModeChange,
+                    onDeviceSelected: onDeviceSelected,
+                    onDevicesSelected: onDevicesSelected,
+                    onSelectFollowDefault: onSelectFollowDefault,
+                    showModeToggle: true,
+                    triggerWidth: 0,
+                    triggerStyle: .iconOnly
+                )
+            }
 
             // EQ button
             Button {
